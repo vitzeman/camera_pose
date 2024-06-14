@@ -8,7 +8,7 @@ import open3d as o3d
 import cv2
 from scipy.spatial.transform import Rotation as R
 
-from pose_visualizer.camera_pose import CameraPose
+from camera_pose.camera_pose import CameraPose
 
 COLORS = [
     (0, 0, 1),

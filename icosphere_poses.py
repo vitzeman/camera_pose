@@ -2,8 +2,8 @@ import numpy as np
 from icosphere import icosphere
 from scipy.spatial.transform import Rotation as R
 
-from pose_visualizer.pose_visualizer import PoseVisualizer
-from pose_visualizer.camera_pose import CameraPose
+from camera_pose.pose_visualizer import PoseVisualizer
+from camera_pose.camera_pose import CameraPose
 
 
 def conversion_GL_CV(Tmxs: np.ndarray) -> np.ndarray:
