@@ -14,17 +14,17 @@ class CameraPose:
     Data class to store the camera pose
 
     Attributes:
-    Tmx: np.ndarray: 4x4 camera pose w.r.t. the world frame
+    Tmx: np.ndarray: 4x4 camera pose w.r.t. the world frame, Default: Identity matrix (4x4)
     aspect_ratio: float: aspect ratio of the camera image
     units: str: units of the translation (mm or m) # TODO: Not properly implemented
     visualization: str: visualization type (both, pyramid, axes)
     camera_notation: str: camera notation (opencv, opengl)
     image_path: str: path to the camera image
     name: str: camera name
-    color: list: color of the camera model (RGB)
+    color: list: color of the camera model (RGB), Default: [0, 0, 0] (black)
     """
 
-    Tmx: np.ndarray = np.eye(4)
+    Tmx: np.ndarray = field(default_factory=lambda: np.eye(4))
     aspect_ratio: float = 1.0
     units: str = "m"
     visualization: str = "both"

@@ -8,7 +8,7 @@ import open3d as o3d
 import cv2
 from scipy.spatial.transform import Rotation as R
 
-from pose_visualizer.camera_pose import CameraPose
+from .camera_pose.camera_pose import CameraPose
 
 COLORS = [
     (0, 0, 1),
@@ -57,7 +57,8 @@ class PoseVisualizer:
     point_list: List[np.ndarray] = field(default_factory=list)
     pcd_list: List[o3d.geometry.PointCloud] = field(default_factory=list)
 
-    coordinates: np.ndarray = np.zeros((3, 0))
+    coordinates: np.ndarray = field(default_factory=lambda: np.zeros((3, 0)))
+    # coordinates: np.ndarray = np.zeros((3, 0))
     visualization: str = "axis"
 
     window_width: int = 1280
@@ -496,30 +497,30 @@ def manual_extrinsic():
 
 
 if __name__ == "__main__":
-    # cp = CameraPose()
-    # cp.name = "Camera 1"
-    # cp.Tmx = np.eye(4)
-    # cp.Tmx[:3, 3] = [0, 0, 1]
-    # cp.Tmx[:3, :3] = R.from_euler("ZYX", [0, 0, 180], degrees=True).as_matrix()
-    # cp.aspect_ratio = 1.0
-    # cp.units = "m"
-    # cp.visualization = "both"
-    # print(cp)
+    cp = CameraPose()
+    cp.name = "Camera 1"
+    cp.Tmx = np.eye(4)
+    cp.Tmx[:3, 3] = [0, 0, 1]
+    cp.Tmx[:3, :3] = R.from_euler("ZYX", [0, 0, 180], degrees=True).as_matrix()
+    cp.aspect_ratio = 1.0
+    cp.units = "m"
+    cp.visualization = "both"
+    print(cp)
 
-    # pv = PoseVisualizer()
-    # pv.add_camera(cp)
+    pv = PoseVisualizer()
+    pv.add_camera(cp)
 
-    # cp = CameraPose()
-    # cp.name = "Camera 2"
-    # cp.Tmx = np.eye(4)
-    # cp.Tmx[:3, 3] = [0, 0, -1]
-    # cp.aspect_ratio = 1.0
-    # cp.visualization = "both"
-    # pv.add_camera(cp)
+    cp = CameraPose()
+    cp.name = "Camera 2"
+    cp.Tmx = np.eye(4)
+    cp.Tmx[:3, 3] = [0, 0, -1]
+    cp.aspect_ratio = 1.0
+    cp.visualization = "both"
+    pv.add_camera(cp)
 
-    # pv.draw()
+    pv.draw()
 
     # demo_from_depth()
     # demo_from_pcl()
 
-    manual_extrinsic()
+    # manual_extrinsic()
