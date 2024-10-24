@@ -18,7 +18,6 @@ COLORS = [
     (1, 0, 1),
     (0, 1, 1),
 ]
-
 ONE_DARK_COLORS = {
     "black": [40, 44, 52],
     "white": [171, 178, 191],
@@ -56,6 +55,8 @@ class PoseVisualizer:
     pose_list: List[CameraPose] = field(default_factory=list)
     point_list: List[np.ndarray] = field(default_factory=list)
     pcd_list: List[o3d.geometry.PointCloud] = field(default_factory=list)
+    cam_list: List[CameraPose] = field(default_factory=list)
+
 
     coordinates: np.ndarray = field(default_factory=lambda: np.zeros((3, 0)))
     # coordinates: np.ndarray = np.zeros((3, 0))
@@ -242,6 +243,86 @@ class PoseVisualizer:
         pcd.paint_uniform_color(color)
 
         return pyramid, pcd
+    
+    def _draw_cam_pyramid(self, cam:CameraPose):
+        pyramid, pcd = self._create_camera_pyramid(cam, color=cam.color)
+        self.to_draw.append(pyramid)
+
+        # If there is an image path, draw the image
+        if cam.image_path and os.path.exists(cam.image_path):
+            img_points = np.asarray(pyramid.points)[1:, :].T
+            image_3d = self._create_3d_image(img_points, cam.image_path)
+            self.to_draw.append(image_3d)
+        else:
+            self.to_draw.append(pcd)
+
+    def _draw_cam_axes(self, cam:CameraPose):
+        axis = self._create_axis_cross(cam.Tmx)
+        self.to_draw.append(axis)
+
+    def _draw_cam_depth(self, cam:CameraPose):
+        # TODO: Add the visualization of the depth
+        # Based on the depth type load the depth, 
+        # and visualize it as a point cloud
+        depth_path = cam.depth_path
+        if not os.path.exists(depth_path):
+            print(f"Depth path {depth_path} does not exist")
+            return
+        extension = depth_path.split(".")[-1]
+        if extension == "npy":
+            depth = np.load(depth_path)
+            depth = depth.astype(np.float32) * cam.depth_scale
+
+        elif extension == "png":
+            depth = cv2.imread(depth_path, cv2.IMREAD_UNCHANGED)
+            depth = depth.astype(np.float32) * cam.depth_scale
+
+        else:
+            print(f"Depth type {extension} not supported")
+            return
+        
+        intrinsic = cam.K
+        dist = cam.dist
+        Tmx = cam.Tmx
+        
+        # TODO: Add the vis
+        pcd = self._create_point_cloud(intrinsic, dist, depth, T=Tmx)
+
+        self.to_draw.append(pcd)
+
+
+        
+
+    def _draw_cameras(self):
+        """Visualizes the cameras from the camera list"""
+        for cam in self.cam_list:
+            if cam.visualization == "both":
+                self._draw_cam_axes(cam)
+                self._draw_cam_pyramid(cam)
+
+            elif cam.visualization == "axes":
+                self._draw_cam_axes(cam)
+
+            elif cam.visualization == "pyramid":
+                self._draw_cam_pyramid(cam)
+            
+            if cam.depth_path:
+                # TODO: Add depth visualization to point cloud
+                self._draw_cam_depth(cam)
+                pass
+
+        # Draw separate p
+        for pcd in self.pcd_list:
+            self.to_draw.append(pcd)
+        
+        # Draw points
+        for point in self.point_list:
+            pcd = self._create_points(point)
+            self.to_draw.append(pcd)
+        
+        o3d.visualization.draw(self.to_draw)
+
+
 
     def draw(self):
         # self.visualizer = o3d.visualization.Visualizer()
@@ -273,7 +354,6 @@ class PoseVisualizer:
                     image_3d = self._create_3d_image(img_points, pose.image_path)
                     # self.visualizer.add_geometry(image_3d)
                     self.to_draw.append(image_3d)
-
                 else:
                     self.to_draw.append(pcd)
                     # self.visualizer.add_geometry(pcd)
@@ -307,7 +387,6 @@ class PoseVisualizer:
             pcd = self._create_points(point)
             # self.visualizer.add_geometry(pcd)
             self.to_draw.append(pcd)
-
         for pcd in self.pcd_list:
             # self.visualizer.add_geometry(pcd)
             self.to_draw.append(pcd)
@@ -317,8 +396,9 @@ class PoseVisualizer:
 
         o3d.visualization.draw(self.to_draw)
 
-    def add_camera(self, pose: CameraPose) -> None:
-        self.pose_list.append(pose)
+    def add_camera(self, cam: CameraPose) -> None:
+        self.cam_list.append(cam)
+        self.pose_list.append(cam)
 
     def add_point(self, point: np.ndarray) -> None:
         self.point_list.append(point)

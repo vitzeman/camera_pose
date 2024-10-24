@@ -9,7 +9,7 @@ if __name__ == "__main__":
     for i in range(Tmxs.shape[0]):
         cp = CameraPose()
         cp.Tmx = Tmxs[i,:,:]
-        cp.aspect_ratio = 1.0
+        cp.aspect_ratio = 16/9
         cp.units = "m"
         cp.visualization = "both"
         pv.add_camera(cp)

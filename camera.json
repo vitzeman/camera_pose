@@ -1,0 +1,41 @@
+{
+  "Tmx": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "aspect_ratio": 1.0,
+  "units": "m",
+  "visualization": "both",
+  "camera_notation": "opencv",
+  "image_path": null,
+  "depth_path": null,
+  "mask_path": null,
+  "name": "Camera 2",
+  "color": [
+    0,
+    0,
+    0
+  ]
+}
