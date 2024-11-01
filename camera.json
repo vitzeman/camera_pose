@@ -26,12 +26,44 @@
     ]
   ],
   "aspect_ratio": 1.0,
+  "resolution": null,
+  "color_K": null,
+  "color_dist": null,
+  "depth_K": null,
+  "depth_dist": null,
   "units": "m",
   "visualization": "both",
   "camera_notation": "opencv",
   "image_path": null,
   "depth_path": null,
+  "depth_scale": 1.0,
   "mask_path": null,
+  "T_d2c": [
+    [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
   "name": "Camera 2",
   "color": [
     0,

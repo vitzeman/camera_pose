@@ -14,7 +14,7 @@ MM2M = 0.001
 class CameraPose:
     """
     Data class to store the camera pose
-
+    # TODO: Add all the atributes to the docstring
     Attributes:
     Tmx: np.ndarray: 4x4 camera pose w.r.t. the world frame, Default: Identity matrix (4x4)
     resolution: tuple: resolution of the camera image
@@ -33,9 +33,12 @@ class CameraPose:
     Tmx: np.ndarray = field(default_factory=lambda: np.eye(4))
     aspect_ratio: float = 1.0
     resolution: tuple = None
-    K: np.ndarray = None
+    color_K: np.ndarray = None
+    color_dist: np.ndarray = None
+    depth_K: np.ndarray = None
+    depth_dist: np.ndarray = None
+    
     units: str = "m"
-    dist: np.ndarray = None
     visualization: str = "both"
     camera_notation: str = "opencv"
     image_path: str = None
@@ -64,13 +67,26 @@ class CameraPose:
                     raise ValueError("Resolution values must be integers")
                 if not all([val > 0 for val in value]):
                     raise ValueError("Resolution values must be positive")
-        elif name == "K":
+        elif name == "color_K":
             if type(value) not in [np.ndarray, type(None)]:
                 raise ValueError("Intrinsic matrix must be a numpy array")
             if value is not None:
                 if value.shape != (3, 3):
                     raise ValueError("Intrinsic matrix must be a 3x3 matrix")
-        elif name == "dist":
+        elif name == "color_dist":
+            if type(value) not in [np.ndarray, type(None)]:
+                raise ValueError("Distortion coefficients must be a numpy array")
+            if value is not None:
+                if value.shape[0] != 5:
+                    raise ValueError("Distortion coefficients must be a 5 element array")
+                
+        elif name == "depth_K":
+            if type(value) not in [np.ndarray, type(None)]:
+                raise ValueError("Intrinsic matrix must be a numpy array")
+            if value is not None:
+                if value.shape != (3, 3):
+                    raise ValueError("Intrinsic matrix must be a 3x3 matrix")
+        elif name == "depth_dist":
             if type(value) not in [np.ndarray, type(None)]:
                 raise ValueError("Distortion coefficients must be a numpy array")
             if value is not None:
@@ -96,6 +112,9 @@ class CameraPose:
         elif name == "depth_path":
             if type(value) not in [str, type(None)]:
                 raise ValueError("Depth path must be a string")
+        elif name == "depth_scale":
+            if value <= 0:
+                raise ValueError("Depth scale must be positive")
         elif name == "mask_path":
             if type(value) not in [str, type(None)]:
                 raise ValueError("Mask path must be a string")
@@ -118,6 +137,7 @@ class CameraPose:
         super().__setattr__(name, value)
 
     def __str__(self) -> str:
+        print(self.Tmx, type(self.Tmx)) 
         angles = R.from_matrix(self.Tmx[:3, :3]).as_euler("zyx", degrees=True)
         angles = [round(angle, 2) for angle in angles]
         string = f"Camera Pose:\n"
@@ -142,7 +162,7 @@ class CameraPose:
             json.dump(d, f, indent=2)
 
     def load(self, path: str) -> None:
-        """Loads the camera information from a json file
+        """Loads the camera information from a json file 
 
         Args:
             path (str): path to the json file
@@ -153,6 +173,7 @@ class CameraPose:
         for key in d:
             if type(d[key]) == list:
                 d[key] = np.array(d[key])
+                pass
 
         self.__dict__.update(d)
 
