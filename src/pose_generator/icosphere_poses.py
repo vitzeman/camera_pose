@@ -133,7 +133,7 @@ def generate_icosphere_views(
 
     return T_mtxs
 
-
+# DEMO USAGE
 if __name__ == "__main__":
     # vertices, faces = icosphere(2)
     # print(vertices, type(vertices))

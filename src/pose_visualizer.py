@@ -33,6 +33,48 @@ ONE_DARK_COLORS = {
 # TODO: Add support for multiple visualizations
 # TODO: Add support for different camera pose notations
 
+def visualize_tag_detection(
+    image: np.ndarray,
+    corners: list,
+    ids: list = None,
+    color: tuple = (0, 255, 0),
+    width: int = 2,
+) -> np.ndarray:
+    """Visualize the detection of markers by outliying them in the image
+
+    Args:
+        image (np.ndarray): Image in BGR format (WxHx3)
+        corners (list): list of the detected corners of the markers in the image
+        ids (list, optional): Ids of corresponding marker corners. Defaults to None.
+        color (tuple, optional): Color of the outline. Defaults to Green.
+        width (int, optional): Width of the outline. Defaults to 2.
+
+    Returns:
+        np.ndarray: Image with the detected markers outlined
+    """
+    draw_img = image.copy()
+
+    for e, corner in enumerate(corners):
+        # corner = corner[0, :, :]
+        corner = np.int32(corner)
+        # print(corner.shape)
+        cv2.polylines(image, corner, True, color, width)
+        cv2.circle(image, (corner[0][0][0], corner[0][0][1]), 2 * width + 1, color, -1)
+        if ids is not None:
+            idx = ids[e]
+            cv2.putText(
+                draw_img,
+                str(idx[0]),
+                (corner[0][0][0], corner[0][0][1]),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                color,
+                width,
+            )
+
+    return draw_img
+
+
 def downsample_image_recursive(image:np.ndarray, max_size:int=640) -> np.ndarray:
     """Downsamples the image recursively until it fits the max size
 
@@ -394,7 +436,7 @@ class PoseVisualizer:
         # self.visualizer.run()
         # self.visualizer.destroy_window()
 
-        o3d.visualization.draw(self.to_draw)
+        o3d.visualization.draw(self.to_draw, show_skybox=False)
 
     def add_camera(self, cam: CameraPose) -> None:
         self.cam_list.append(cam)
