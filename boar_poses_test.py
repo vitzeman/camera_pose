@@ -218,22 +218,101 @@ def create_board_mesh(img_path: str, board_size: np.ndarray) -> dict:
     }
 
 
+def create_camera_pyramid(
+    bgr: np.ndarray, cam_K: np.ndarray, Tmx: np.ndarray, name: str = "camera"
+) -> None:
+    """Based on the camera intrinsics and rgb image creates the camera pyramid
+
+    Adds visualization of the camera pyramid to the scene with the notch
+    depicting the top of the image
+
+    Args:
+        bgr (np.ndarray): BGR image [HxWx3]
+        cam_K (np.ndarray): Camera intrinsics [3x3] matrix
+    """
+    h, w = bgr.shape[:2]
+    camera_lineset = o3d.geometry.LineSet()
+    camera_lineset = camera_lineset.create_camera_visualization(
+        w, h, cam_K, Tmx, scale=100
+    )
+    camera_lineset.paint_uniform_color([0.2, 0.2, 0.2])
+    camera_points = np.asarray(camera_lineset.points)
+
+    # create top view of the pyramid
+    left_top = camera_points[1, :]
+    right_top = camera_points[2, :]
+    right_bot = camera_points[3, :]
+    left_bot = camera_points[4, :]
+    height = np.abs(right_bot[1] - right_top[1])
+    h = height * 0.33
+
+    # Top Notch
+
+    # NOT CORRECT need to calculate the notch point through vector
+
+    mid_top_point = (right_top - left_top) / 2
+    height_vect = (left_top - left_bot) * 0.33
+
+    notch_point = left_top + mid_top_point + height_vect
+
+
+
+    # mid_width = (right_top[0] - left_top[0]) / 2
+    # notch_point = np.array([left_top[0] + mid_width, left_top[1] - h, left_top[2]])
+    notch_points = np.array([left_top, right_top, notch_point])
+    top_lineset = o3d.geometry.LineSet()
+    top_lineset.points = o3d.utility.Vector3dVector(notch_points)
+    top_lineset.lines = o3d.utility.Vector2iVector([[0, 2], [2, 1]])
+    top_lineset.paint_uniform_color([0.2, 0.2, 0.2])
+
+    # Add image to the camera pyramid
+    img = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    img = cv2.flip(img, 0)
+    map_image = o3d.geometry.Image(img)
+
+    vertices = np.array([left_top, right_top, right_bot, left_bot], dtype=np.float32)
+    triangles = np.array([[0, 1, 2], [0, 2, 3]], dtype=np.int32)
+    uvs = np.array([[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]], dtype=np.float32)
+
+    texture_map = o3d.geometry.TriangleMesh()
+    texture_map.vertices = o3d.utility.Vector3dVector(vertices)
+    texture_map.triangles = o3d.utility.Vector3iVector(triangles)
+    texture_map.triangle_uvs = o3d.utility.Vector2dVector(uvs)
+
+    material = o3d.visualization.rendering.MaterialRecord()
+    material.shader = "defaultUnlit"
+    material.base_color = [1.0, 1.0, 1.0, 1.0]  # RGBA
+    material.base_metallic = 0.0
+    material.base_roughness = 1.0
+    material.albedo_img = map_image
+
+    camera_img = {
+        "name": name,
+        "geometry": texture_map,
+        "material": material,
+    }
+    return [camera_lineset, top_lineset, camera_img]
+
+
 board_mesh = create_board_mesh(
     img_path="data/board/board.png",
     board_size=np.array(board_data["paper_size_mm"]),
 )
 
-to_draw = [board_mesh]
-to_draw.append(
-    o3d.geometry.TriangleMesh.create_coordinate_frame(size=200)
-)  # Origin frame
+to_draw = []
+# to_draw = [board_mesh]
+# to_draw.append(
+#     o3d.geometry.TriangleMesh.create_coordinate_frame(size=200)
+# )  # Origin frame
 sphere = o3d.geometry.TriangleMesh.create_sphere(radius=50)
 sphere.paint_uniform_color([0, 0, 0])  # Black for the origin
 colors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
-to_draw.append(sphere)
+# to_draw.append(sphere)
 for e, camera_pose in enumerate(camera_poses):
+    if e != 4:
+        continue
     # Create a 4x4 transformation matrix from the camera pose
-    Tmx = np.linalg.inv(camera_pose)
+    Tmx = np.linalg.inv(camera_pose) @ np.diag([1, -1, -1, 1])
 
     # Create a coordinate frame for the camera pose
     frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=100)
@@ -244,7 +323,21 @@ for e, camera_pose in enumerate(camera_poses):
     sphere.transform(Tmx)
     # Visualize the coordinate frame
     to_draw.append(frame)
-    to_draw.append(sphere)
+    # to_draw.append(sphere)
+
+    # Create the camera pyramid
+    bgr = cv2.imread(images[e])
+
+    camera_vis = create_camera_pyramid(
+        bgr=bgr,
+        cam_K=Kmx,
+        Tmx=camera_pose,
+        name=f"camera_{e}",
+    )
+
+    to_draw.extend(camera_vis)
 
 
-o3d.visualization.draw(to_draw)
+
+
+o3d.visualization.draw(to_draw, show_skybox=False)
