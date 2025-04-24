@@ -1,7 +1,9 @@
 import json
 import os
 
-import open3d
+import open3d as o3d
+
+from pathlib import Path
 
 import numpy as np
 import cv2
@@ -69,20 +71,26 @@ def visualize_tag_detection(
     return image
 
 
-images = [
-    "data/color_000000.png",
-    "data/color_000001.png",
-    "data/color_000002.png",
-    "data/color_000003.png",
-    "data/color_000004.png",
-]
+directry_with_images = Path("MLPrague25_WorkshopDatasetBoard/data/dataset/rgb")
+image_files = list(directry_with_images.glob("*.png"))
+image_files.sort()
+
+# images = [
+#     "data/color_000000.png",
+#     "data/color_000001.png",
+#     "data/color_000002.png",
+#     "data/color_000003.png",
+#     "data/color_000004.png",
+# ]
+
+images = [str(image) for image in image_files]
 for i, image in enumerate(images):
     bgr = cv2.imread(image)
     if bgr is None:
         print(f"Failed to read image {image}")
         continue
     # cv2_imshow(bgr)
-    print(bgr.shape)
+    # print(bgr.shape)
 
 
 # Loading the board data Which contains the marker positions know from the design
@@ -91,12 +99,12 @@ with open(board_data_path, "r") as f:
     board_data = json.load(f)
 
 # Loading the camera parameters
-camera_params_path = "data/camera_params.json"
-with open(camera_params_path, "r") as f:
+path2camera_matrix = "MLPrague25_WorkshopDatasetBoard/data/dataset/cam_intrinsics.json"
+with open(path2camera_matrix, "r") as f:
     camera_params = json.load(f)
-    camera_color_params = camera_params["color"]
-Kmx = np.array(camera_color_params["Kmx"])
-dist_coeffs = np.array(camera_color_params["coeffs"])
+
+Kmx = np.array(camera_params["K"])
+dist_coeffs = np.zeros((5), dtype=np.float32)
 
 
 params = cv2.aruco.DetectorParameters()
@@ -148,24 +156,21 @@ for i, image in enumerate(images):
     camera_poses.append(Tmx)
 
     # INFO: SHOWS THE DETECTION OF THE APRILTAG MARKERS AND THE REJECTED CORNERS
-    img2show = visualize_tag_detection(
-        img2show,
-        corners,
-        ids,
-        color=(0, 255, 0),
-        width=2,
-    )
-    img2show = visualize_tag_detection(
-        img2show,
-        rejects,
-        color=(0, 0, 255),
-        width=1,
-    )
+    # img2show = visualize_tag_detection(
+    #     img2show,
+    #     corners,
+    #     ids,
+    #     color=(0, 255, 0),
+    #     width=2,
+    # )
+    # img2show = visualize_tag_detection(
+    #     img2show,
+    #     rejects,
+    #     color=(0, 0, 255),
+    #     width=1,
+    # )
 
     # cv2_imshow(img2show)
-
-
-import open3d as o3d
 
 
 def create_board_mesh(img_path: str, board_size: np.ndarray) -> dict:
@@ -255,8 +260,6 @@ def create_camera_pyramid(
 
     notch_point = left_top + mid_top_point + height_vect
 
-
-
     # mid_width = (right_top[0] - left_top[0]) / 2
     # notch_point = np.array([left_top[0] + mid_width, left_top[1] - h, left_top[2]])
     notch_points = np.array([left_top, right_top, notch_point])
@@ -300,27 +303,27 @@ board_mesh = create_board_mesh(
 )
 
 to_draw = []
-# to_draw = [board_mesh]
-# to_draw.append(
-#     o3d.geometry.TriangleMesh.create_coordinate_frame(size=200)
-# )  # Origin frame
-sphere = o3d.geometry.TriangleMesh.create_sphere(radius=50)
-sphere.paint_uniform_color([0, 0, 0])  # Black for the origin
-colors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
+to_draw = [board_mesh]
+to_draw.append(
+    o3d.geometry.TriangleMesh.create_coordinate_frame(size=200)
+)  # Origin frame
+# sphere = o3d.geometry.TriangleMesh.create_sphere(radius=50)
+# sphere.paint_uniform_color([0, 0, 0])  # Black for the origin
+# colors = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
 # to_draw.append(sphere)
 for e, camera_pose in enumerate(camera_poses):
-    if e != 4:
+    if e % 10 != 0:
         continue
     # Create a 4x4 transformation matrix from the camera pose
-    Tmx = np.linalg.inv(camera_pose) @ np.diag([1, -1, -1, 1])
+    Tmx = np.linalg.inv(camera_pose)
 
     # Create a coordinate frame for the camera pose
     frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=100)
     frame.transform(Tmx)
 
-    sphere = o3d.geometry.TriangleMesh.create_sphere(radius=20)
-    sphere.paint_uniform_color(colors[e % len(colors)])  # Color for the camera
-    sphere.transform(Tmx)
+    # sphere = o3d.geometry.TriangleMesh.create_sphere(radius=20)
+    # sphere.paint_uniform_color(colors[e % len(colors)])  # Color for the camera
+    # sphere.transform(Tmx)
     # Visualize the coordinate frame
     to_draw.append(frame)
     # to_draw.append(sphere)
@@ -336,8 +339,6 @@ for e, camera_pose in enumerate(camera_poses):
     )
 
     to_draw.extend(camera_vis)
-
-
 
 
 o3d.visualization.draw(to_draw, show_skybox=False)
